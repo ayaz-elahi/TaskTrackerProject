@@ -33,6 +33,16 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Security Question Reset Routes
+    Route::get('forgot-password-security', [App\Http\Controllers\SecurityQuestionController::class, 'showEmailForm'])
+        ->name('password.security.request');
+    Route::post('forgot-password-security', [App\Http\Controllers\SecurityQuestionController::class, 'validateEmail'])
+        ->name('password.security.email');
+    Route::get('reset-password-security', [App\Http\Controllers\SecurityQuestionController::class, 'showQuestionForm'])
+        ->name('password.security.question');
+    Route::post('reset-password-security', [App\Http\Controllers\SecurityQuestionController::class, 'reset'])
+        ->name('password.security.update');
 });
 
 Route::middleware('auth')->group(function () {

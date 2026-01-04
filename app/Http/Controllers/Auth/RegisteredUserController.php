@@ -34,6 +34,8 @@ public function store(Request $request): RedirectResponse
         'username' => ['required', 'string', 'max:255', 'unique:users', 'alpha_dash'],
         'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users'],
         'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        'security_question' => ['required', 'string', 'max:255'],
+        'security_answer' => ['required', 'string', 'max:255'],
     ]);
 
     $user = User::create([
@@ -41,6 +43,8 @@ public function store(Request $request): RedirectResponse
         'username' => $request->username,
         'email' => $request->email,
         'password' => Hash::make($request->password),
+        'security_question' => $request->security_question,
+        'security_answer' => $request->security_answer,
     ]);
 
     event(new Registered($user));

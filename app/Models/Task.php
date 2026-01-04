@@ -12,6 +12,8 @@ class Task extends Model
 
     protected $fillable = [
         'user_id',
+        'project_id',
+        'assigned_to',
         'title',
         'description',
         'deadline',
@@ -27,7 +29,18 @@ class Task extends Model
 
     public function user(): BelongsTo
     {
+        // The creator of the task
         return $this->belongsTo(User::class);
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function scopeCompleted($query)

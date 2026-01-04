@@ -1,89 +1,117 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('My Tasks') }}
-            </h2>
-            <a href="{{ route('tasks.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                Create New Task
-            </a>
-        </div>
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            {{ __('My Tasks') }}
+        </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            @if (session('success'))
-                <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            @endif
+            
+            <!-- Filter & Search Bar -->
+            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 mb-6">
+                <form method="GET" action="{{ route('tasks.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Search -->
+                    <div class="col-span-1 md:col-span-2"> <!-- Takes half the width on desktop -->
+                        <x-text-input id="search" name="search" type="text" class="w-full" placeholder="Search tasks..." :value="request('search')" />
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div>
+                        <select name="status" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" onchange="this.form.submit()">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                        </select>
+                    </div>
 
-            @if($tasks->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     <!-- Priority Filter -->
+                    <div>
+                        <select name="priority" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" onchange="this.form.submit()">
+                            <option value="">All Priorities</option>
+                            <option value="high" {{ request('priority') == 'high' ? 'selected' : '' }}>High</option>
+                            <option value="medium" {{ request('priority') == 'medium' ? 'selected' : '' }}>Medium</option>
+                            <option value="low" {{ request('priority') == 'low' ? 'selected' : '' }}>Low</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tasks List -->
+            @if($tasks->isEmpty())
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 text-center text-gray-500 dark:text-gray-400">
+                    No tasks found.
+                </div>
+            @else
+                <div class="space-y-4">
                     @foreach($tasks as $task)
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow duration-200">
-                            <div class="p-6">
-                                <div class="flex justify-between items-start mb-4">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                        {{ $task->title }}
-                                    </h3>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ $task->priority_color }}-100 text-{{ $task->priority_color }}-800">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 flex flex-col md:flex-row md:items-center justify-between hover:shadow-md transition-shadow">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $task->title }}</h3>
+                                    
+                                    <!-- Priority Badge -->
+                                    <span class="px-2 py-1 text-xs rounded-full 
+                                        {{ $task->priority == 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : '' }}
+                                        {{ $task->priority == 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                                        {{ $task->priority == 'low' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                                    ">
                                         {{ ucfirst($task->priority) }}
                                     </span>
+                                    
+                                    @if($task->project)
+                                        <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-md">
+                                            {{ $task->project->name }}
+                                        </span>
+                                    @endif
                                 </div>
-
-                                @if($task->description)
-                                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
-                                        {{ $task->description }}
-                                    </p>
-                                @endif
-
-                                <div class="space-y-2 mb-4">
+                                <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">{{ Str::limit($task->description, 100) }}</p>
+                                
+                                <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
                                     @if($task->deadline)
-                                        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            Due: {{ $task->deadline->format('M d, Y') }}
-                                        </div>
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            {{ $task->deadline->format('M d, Y H:i') }}
+                                        </span>
                                     @endif
                                     
-                                    <div class="flex items-center text-sm">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                            @if($task->is_completed) bg-green-100 text-green-800 
-                                            @else bg-gray-100 text-gray-800 
-                                            @endif">
-                                            {{ $task->is_completed ? 'Completed' : ucfirst($task->status) }}
+                                    @if($task->assigned_to && $task->assigned_to !== Auth::id())
+                                        <span class="flex items-center gap-1" title="Assigned to {{ $task->assignee->name }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                            {{ $task->assignee->name }}
                                         </span>
-                                    </div>
+                                    @endif
                                 </div>
-
-                                <div class="flex space-x-2">
-                                    <a href="{{ route('tasks.show', $task) }}" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded text-sm">
-                                        View
-                                    </a>
-                                    <a href="{{ route('tasks.edit', $task) }}" class="flex-1 text-center bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2 px-4 rounded text-sm">
-                                        Edit
-                                    </a>
-                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mt-4 md:mt-0">
+                                <a href="{{ route('tasks.edit', $task) }}" class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </a>
+                                
+                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Are you sure?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </form>
+                                
+                                <form method="POST" action="{{ route('tasks.update', $task) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="title" value="{{ $task->title }}">
+                                    <input type="hidden" name="priority" value="{{ $task->priority }}">
+                                    <input type="hidden" name="status" value="{{ $task->status === 'completed' ? 'pending' : 'completed' }}">
+                                    
+                                    <button type="submit" class="{{ $task->status === 'completed' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }} px-3 py-1 rounded-md text-sm font-medium hover:opacity-80 transition-opacity">
+                                        {{ $task->status === 'completed' ? 'Completed' : 'Mark Complete' }}
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     @endforeach
-                </div>
-            @else
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-12 text-center">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No tasks</h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating a new task.</p>
-                        <div class="mt-6">
-                            <a href="{{ route('tasks.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                                Create New Task
-                            </a>
-                        </div>
-                    </div>
                 </div>
             @endif
         </div>
